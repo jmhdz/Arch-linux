@@ -1,0 +1,188 @@
+
+
+Installation
+I have a 250G disk for which I will create the layout. I used dd to write Arch ISO to USB and booted from it for installation. My USB device was /dev/sdb:
+
+# dd if=/home/nixknight/Downloads/archlinux-2014.01.05-dual.iso of=/dev/sdb bs=1MB
+After booting from the drive, use cfdisk to partition your hard drive. I used the following partition layout on my 250G disk:
+
+Arch Install Screen 1
+
+Remember to set /boot partition to bootable otherwise the OS will not be boot from disk after installation. If you don’t want to create a separate boot partition and want a single partition with the entire rootfs in it then set that partition to bootable.
+
+Setup LVM
+If you want to setup an encrypted install you should jump to Setup Encrypted LVM sub-section of the Encrypted Installation section of the tutorial. Instructions below are for an unencrypted install. Create a partition for the rest of root using LVM as follows:
+
+# pvcreate /dev/sda3
+# vgcreate NIXKNIGHT /dev/sda3
+# lvcreate --extents 100%FREE NIXKNIGHT --name ROOTFS
+Now format and mount partitions to /mnt as follows:
+
+# mkfs.ext4 /dev/sda1
+# mkfs.ext4 /dev/mapper/NIXKNIGHT-ROOTFS
+# mount /dev/mapper/NIXKNIGHT-ROOTFS /mnt
+# mkdir /mnt/boot
+# mount /dev/sda1 /mnt/boot
+Create and turn on SWAP partition:
+
+# mkswap /dev/sda2
+# swapon /dev/sda2
+You can use following command to make sure that your disk’s layout is according to your needs:
+
+# lsblk /dev/sda
+Install Packages
+Arch Linux uses pacstrap to install packages to a specified new root directory which in our case is /mnt. Install base and base-devel packages as follows:
+
+# pacstrap -i /mnt base base-devel
+Our base distribution is installed now. We need to generate an fstab file:
+
+# genfstab -U -p /mnt >> /mnt/etc/fstab
+New Root Directory
+Although our base distribution is installed, it still isn’t ready yet. We need to do some modification to make it usable. Enter the new root directory as follows:
+
+# arch-chroot /mnt /bin/bash
+Configure locale by opening /etc/locale.gen in a text editor and uncomment:
+
+en_US.UTF-8 UTF-8
+Then execute:
+
+# locale-gen
+# echo LANG=en_US.UTF-8 > /etc/locale.conf
+Create a new user:
+
+# useradd -m -g users -G wheel,storage,power -s /bin/bash nixknight
+Set passwords of root and the new user:
+
+# passwd
+# passwd nixknight
+Link your local timezone to /etc/localtime:
+
+# ln -s /usr/share/zoneinfo/Asia/Karachi /etc/localtime
+Enable DHCP client:
+
+# systemctl enable dhcpcd.service
+For 64-bit installations, edit /etc/pacman.conf and uncomment multilib repository:
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+Install packages as follows:
+
+# pacman -Sy bash-completion vim htop grub-bios os-prober mlocate lsof strace wget openssh
+Configure LVM and GRUB
+For encrypted installation, you should jump to Configure LVM and GRUB sub-section of the Encrypted Installation section of the tutorial.
+
+Since we have setup LVM we need to enable LVM module in initial ramdisk environment. We do that by adding LVM to HOOKS variable in /etc/mkinitcpio.conf:
+
+Before adding:
+
+HOOKS="base udev autodetect modconf block filesystems keyboard fsck"
+After adding:
+
+HOOKS="base udev autodetect modconf keymap block lvm2 filesystems keyboard fsck"
+Rebuild initial ramdisk:
+
+# mkinitcpio -p linux
+Modify /etc/default/grub and add the following line:
+
+GRUB_DISABLE_SUBMENU=y
+Install GRUB:
+
+# grub-install /dev/sda
+# cp /usr/share/locale/en\@quot/LC_MESSAGES/grub.mo /boot/grub/locale/en.mo
+# grub-mkconfig -o /boot/grub/grub.cfg
+Set system hostname in /etc/hostname.
+
+Exit chroot environment, umount partitions and reboot:
+
+# exit
+# umount /mnt/boot
+# umount /mnt
+# reboot
+Installing Desktop Environment
+I am fond of KDE. I just love it. I don’t have any other way to describe it.
+
+My desktop system has both AMD (x16) and Intel graphics (integrated) so I’ll be installing drivers for both chipsets. You can get more information regarding graphics drivers from ArchWiki graphics page. install packages as follows:
+
+# pacman -Sy xf86-video-ati xf86-video-intel xf86-video-vesa xorg-server xorg-xinit xorg-server-utils mesa xorg-twm xorg-xclock xterm xdg-user-dirs kde oxygen-gtk2 oxygen-gtk3 kde-gtk-config packagekit apper p7zip unrar freerdp flashplugin firefox chromium seamonkey icedtea-web-java7 kpartsplugin hunspell thunderbird skype amarok smplayer smtube smplayer-themes smplayer-skins libdvdcss gstreamer0.10-good-plugins gstreamer0.10-bad-plugins gstreamer0.10-ugly-plugins  gstreamer0.10-ffmpeg dialog net-tools openvpn pptpclient wireless_tools autoconf dmxproto expac freeglut libgtop libgksu gksu libgnomeui python2-egg gtkspell python2-gtkspell gnome-python-extras gtkmm gparted libdmx libftdi libotr3 mtr vpnc openconnect networkmanager-openconnect networkmanager-openvpn networkmanager-pptp networkmanager-vpnc ntfs-3g ntp pm-quirks pm-utils python-cairo python2-lxml python2-pysqlite python2-rsvg xorg-xdpyinfo unrar exfat-utils extundelete fuse-exfat iftop iotop python2-ecdsa python2-paramiko python2-pexpect rekonq screenfetch tinyxml lib32-libtxc_dxtn ttf-ubraille ttf-khmer font-mathematica ttf-dejavu ttf-droid ttf-freefont ttf-inconsolata ttf-liberation adobe-source-code-pro-fonts dina-font artwiz-fonts profont tamsyn-font terminus-font bdf-unifont ttf-linux-libertine ttf-ubuntu-font-family libmtp kio-mtp linux-headers pulseaudio pulseaudio-alsa lib32-libpulse lib32-alsa-plugins pavucontrol kdemultimedia-kmix
+Yeah I know thats a lot of packages. Anyway, you need to select ubuntu font style (if you like ubuntu font) and after installation you need to turn on KDM, NetworkManager and disable DHCP service.
+
+# systemctl enable kdm.service
+# systemctl enable NetworkManager
+# systemctl disable dhcpcd
+The reason for disabling DHCP service is That Networkmanager has its own means of acquiring IP address on a DHCP enabled network and believe me if both services are enabled, you’ll never get an IP.
+
+Reboot the system at this point.
+
+Arch’s official repositories contained a package kdeplasma-applets-networkmanagement. But its not there anymore and has been replced by kdeplasma-applets-plasma-nm. Seriously, I don’t like the new package but fortunately Arch still has the old one in its AUR. To install the old kdeplasma-applets-networkmanagement we need to compile and install the package. Download the tarball from AUR page, compile and install it as follows:
+
+# cd /usr/src
+# wget https://aur.archlinux.org/packages/kd/kdeplasma-applets-networkmanagement/kdeplasma-applets-networkmanagement.tar.gz
+# tar zxf kdeplasma-applets-networkmanagement.tar.gz
+# cd kdeplasma-applets-networkmanagement
+# makepkg -s --asroot
+# pacman -U kdeplasma-applets-networkmanagement-<version>-x86_64.pkg.tar.xz
+One if the reasons I chose Arch Linux was you could have Ubuntu’s patches to cairo and freetype libraries. These packages are also not in official repositories but they exist in AUR. You need to install freetype2-ubuntu, fontconfig-ubuntu and cairo-ubuntu just as above installed AUR package.
+
+You might want to fix KDM cursor as follows:
+
+# ln -s /usr/share/icons/Oxygen_White /usr/share/icons/default
+Encrypted Installation (Optional)
+Encrypted installation requires to perform some extra steps while setting up LVM and configuring GRUB.
+
+Setup Encrypted LVM
+Encrypt /dev/sda3:
+
+# cryptsetup -c aes-xts-plain -y -s 512 luksFormat /dev/sda3
+# cryptsetup luksOpen /dev/sda3 luks
+Setup LVM on the encrypted disk space:
+
+# pvcreate /dev/mapper/luks
+# vgcreate NIXKNIGHT /dev/mapper/luks
+# lvcreate --extents 100%FREE NIXKNIGHT --name ROOTFS
+Now format and mount partitions to /mnt as follows:
+
+# mkfs.ext4 /dev/sda1
+# mkfs.ext4 /dev/mapper/NIXKNIGHT-ROOTFS
+# mount /dev/mapper/NIXKNIGHT-ROOTFS /mnt
+# mkdir /mnt/boot
+# mount /dev/sda1 /mnt/boot
+Create and turn on SWAP parition:
+
+# mkswap /dev/sda2
+# swapon /dev/sda2
+You can use following command to make sure that your disk’s layout is according to your needs:
+
+# lsblk /dev/sda
+After generating fstab verify that /dev/sda1 points to /boot directory.
+
+Return to Install Packages.
+
+Configure LVM and GRUB
+Since we have setup an encrypted LVM we need to enable LVM and encryption module in initial ramdisk environment. We do that by adding LVM to HOOKS variable in /etc/mkinitcpio.conf:
+
+Before adding:
+
+HOOKS="base udev autodetect modconf block filesystems keyboard fsck"
+After adding:
+
+HOOKS="base udev autodetect modconf block keymap encrypt lvm2 filesystems keyboard fsck"
+and execute:
+
+# mkinitcpio -p linux
+Modify /etc/default/grub and add the following line:
+
+GRUB_DISABLE_SUBMENU=y
+GRUB_CMDLINE_LINUX="cryptdevice=/dev/sda3:vgroup:allow-discards"
+Install GRUB:
+
+# grub-install /dev/sda
+# cp /usr/share/locale/en\@quot/LC_MESSAGES/grub.mo /boot/grub/locale/en.mo
+# grub-mkconfig -o /boot/grub/grub.cfg
+Set system hostname in /etc/hostname.
+
+Exit chroot environment, umount partitions and reboot:
+
+# exit
+# umount /mnt/boot
+# umount /mnt
+# reboot
