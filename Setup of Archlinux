@@ -1,0 +1,190 @@
+-- Install arch linux
+
+-- Installed redshift
+
+-- Installed java and ark
+    yaourt -S ark jdk ttf-hack p7zip zip unzip unrar
+
+-- Installed zsh
+    pacman -S zsh
+
+-- Installed tor and tor-browser
+    yaourt -S tor tor-browser pacaur
+    
+-- Installed and configure Autofs
+    $ pacaur -S autofs
+
+-- Wireless Printing
+    Installed Cups
+        $pacman -S cups ghostscript gsfonts cups-pdf samba avahi nss-mdns
+    
+    enable and start avahi daemon
+        $systemctl enable avahi-daemon.service
+        $systemctl start avahi-daemon.service
+        
+    Edit the file /ect/nsswitch.conf, change the line < host: files dns myhostname > to < hosts: files mdns_minimal [NOTFOUND=return] dns myhostname mdns >
+    
+    Install the driver for the printer, in my case from AUR
+        $git clone https://aur.archlinux.org/epson-inkjet-printer-201110w.git
+        $cd into git folder
+        $makepkg -sri
+        
+    Start and enable cups
+        $systemctl enable org.cups.cupsd.service
+        $systemctl start org.cups.cupsd.service
+        
+    The CUPS server configuration located in /etc/cups/cupsd.conf. After editing, restart org.cups.cupsd.service to apply any changes. The default configuration is sufficient for most users.
+        
+    By default, pdf files are stored in /var/spool/cups-pdf/$USER. The location can be changed in /etc/cups/cups-pdf.conf
+    
+    
+    
+Install from AUR
+
+$ cd ~/builds
+$ curl -L -O https://aur.archlinux.org/cgit/aur.git/snapshot/foo.tar.gz
+
+It is also possible to clone the Git repository that is labeled as the "Git Clone URL" in the "Package Details":
+ $ cd ~/build-repos
+ $ git clone https://aur.archlinux.org/foo.git
+
+ Build and install the package
+Change directories to the build directory if not already there, then extract the previously downloaded package:
+$ cd ~/builds
+$ tar -xvf foo.tar.gz
+
+This should create a new directory called foo in the build directory.
+Note: In the case of a git clone, the extraction process is unnecessary. The git clone has already created the directory foo.
+
+Make the package. After manually confirming the integrity of the files, run makepkg as a normal user:
+$ makepkg -sri
+
+--installed plex
+Back in SSH type wget and paste the link you have copied to the clipboard, trim the s from https as well if you have issues
+
+wget https://downloads.plex.tv/plex-media-server/0.9.14.0.1539-61cdd0f/PlexMediaServer-0.9.14.0.1539-61cdd0f-arm7.spk
+Extract the source
+
+tar -xvf PlexMediaServer*
+Make a folder for Plex
+
+sudo mkdir -p /usr/lib/plexmediaserver
+Extract the Plex Server to the directory we just made
+
+sudo tar -xf package.tgz -C /usr/lib/plexmediaserver/
+Copy the directory we just made to a Plex friendly place
+
+sudo cp -dr --no-preserve='ownership' /usr/lib/plexmediaserver /opt/
+Create the systemd script
+
+sudo nano /usr/lib/systemd/system/plexmediaserver.service
+Fill out the Systemd script
+
+
+[Unit]
+Description=Plex Media Server
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/conf.d/plexmediaserver
+ExecStart=
+ExecStart=/opt/plexmediaserver/Plex\x20Media\x20Server
+Type=simple
+User=bananapi
+Group=bananapi
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60s
+StartLimitBurst=3
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
+Ctrl+X, Y and Enter
+
+Make a directory for Plex config file
+
+sudo mkdir /var/lib/plex/
+Make the Plex config file
+
+sudo nano /var/lib/plex/plex.conf
+Fill out the Plex config file
+
+LD_LIBRARY_PATH=/opt/plexmediaserver
+PLEX_MEDIA_SERVER_HOME=/opt/plexmediaserver
+PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR=/var/lib/plex
+PLEX_MEDIA_SERVER_MAX_PLUGIN_PROCS=6
+PLEX_MEDIA_SERVER_TMPDIR=/tmp
+TMPDIR=/tmp
+Ctrl+X, Y and Enter
+
+Make Service file config directory
+
+sudo mkdir /etc/conf.d/
+Link the Plex Config file to the Service config file
+
+sudo ln -s /var/lib/plex/plex.conf /etc/conf.d/plexmediaserver
+Change the access of the directories Plex needs access to
+
+sudo chmod 755 {/opt,/etc/conf.d,/usr/lib/systemd/system}
+Change the access of the Systemd service file
+
+sudo chmod 644 /usr/lib/systemd/system/plexmediaserver.service
+Change the access of the Plex config file
+
+sudo chmod 644 /etc/conf.d/plexmediaserver
+Change the access of the Service config file
+
+sudo chmod 750 /var/lib/plex/plex.conf
+Change the access of the Plex main directory
+
+sudo chmod 755 /usr/lib/plexmediaserver
+Re-assign the owner of the Service config directory
+
+sudo chown -R bananapi:bananapi /var/lib/plex
+Re-assign the owner of the new Plex directory
+
+sudo chown -R bananapi:bananapi /opt/plexmediaserver 
+Re-assign the owner of the Plex config file
+
+sudo chown bananapi:bananapi /var/lib/plex/plex.conf
+Autostart Plex Server using Systemctl Plex Service
+
+sudo systemctl enable plexmediaserver
+Start up the Plex Server using Systemctl Plex Service
+
+sudo systemctl start plexmediaserver
+Now you can go to http://local-ip-address:32400/web to see Plex.
+
+Automounter
+
+Change the /usr/share/kde4/services/kded/device_automounter.desktop line X-KDE-Kded-phase=1 to X-KDE-Kded-phase=0
+Open "kcmshell4 kcmkded" and start 'Removable Device Automounter'
+Open "kcmshell4 device_automounter_kcm" and pick the right options from the KDE 'Removable Devices module'
+
+find my UUID
+# blkid
+
+find the otions which mounted
+%cat /etc/mtab
+
+Make a rule in /etc/fstab
+#Seagate My Book
+UUID=c19f2156-578f-4787-8b25-2c2cc9e370f9       /run/media/chema/My\040Book     	ext4      	defaults,nofail,x-systemd.device-timeout=1      	0 0
+
+ssh agent
+
+
+$ssh-agent
+$ eval $(ssh-agent)
+$ ssh-add ~/.ssh/id-rsa
+
+Install keychain
+$ pacaur -S keychain
+-- add the following line to ~/.zshrc
+eval $(keychain --eval --quiet id_ed25519 id_rsa ~/.keys/my_custom_key)
+
+
+
+
+rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/bigfile.txt username@198.211.117.129:~/Desktop

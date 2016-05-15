@@ -1,0 +1,59 @@
+arch linux maintenance
+
+reflector --verbose -l 200 -p http --sort rate --save /etc/pacman.d/mirrorlist
+
+pacman -Syu
+pacaur -Syu
+
+
+updates AUR only
+yaourt -Sbu --aur
+
+paccache -r
+
+paccache -ruk0
+
+remove package
+pacman -Rns 
+
+For recursively removing orphans and their configuration files:
+# pacman -Rns $(pacman -Qtdq)
+
+
+It is good practice to keep periodic backups of all pacman-installed packages. In the event of a system crash which is unrecoverable by other means, pacman can then easily reinstall the very same packages onto a new installation.
+First, backup the current list of non-local packages: $ pacman -Qqen > pkglist.txt (for manually installed pacman -Qqem > pkglist.txt)
+Store the pkglist.txt on a USB key or other convenient medium or gist.github.com or Evernote, Dropbox, etc.
+Copy the pkglist.txt file to the new installation, and navigate to the directory containing it.
+Issue the following command to install from the backup list: # pacman -S $(< pkglist.txt)
+In the case you have a list which was not generated like mentioned above, there may be foreign packages in it (i.e. packages not belonging to any repos you have configured, or packages from the AUR).
+In such a case, you may still want to install all available packages from that list:
+# pacman -S --needed $(comm -12 <(pacman -Slq|sort) <(sort badpkdlist) )
+Explanation:
+pacman -Slq lists all available softwares, but the list is sorted by repository first, hence the sort command.
+Sorted files are required in order to make the comm command work.
+The -12 parameter display lines common to both entries.
+The --needed switch is used to skip already installed packages.
+Finally, you may want to remove all the packages on your system that are not mentioned in the list.
+Warning: Use this command wisely, and always check the result prompted by pacman.
+# pacman -Rsu $(comm -23 <(pacman -Qq|sort) <(sort pkglist))
+
+
+Install from AUR
+
+$ cd ~/builds
+$ curl -L -O https://aur.archlinux.org/cgit/aur.git/snapshot/foo.tar.gz
+
+It is also possible to clone the Git repository that is labeled as the "Git Clone URL" in the "Package Details":
+ $ cd ~/build-repos
+ $ git clone https://aur.archlinux.org/foo.git
+
+ Build and install the package
+Change directories to the build directory if not already there, then extract the previously downloaded package:
+$ cd ~/builds
+$ tar -xvf foo.tar.gz
+
+This should create a new directory called foo in the build directory.
+Note: In the case of a git clone, the extraction process is unnecessary. The git clone has already created the directory foo.
+
+Make the package. After manually confirming the integrity of the files, run makepkg as a normal user:
+$ makepkg -sri

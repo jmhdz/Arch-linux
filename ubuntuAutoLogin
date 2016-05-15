@@ -1,0 +1,33 @@
+ubuntu start on command line
+
+#nano /etc/default/grub
+Find the line that says GRUB_CMLDLINE_LINUX_DEFAULT. By default it should have quotation marks with nothing in between. Add the word “text” within the quotation marks.
+
+#update-grub
+
+to start the GUI 
+$startx
+
+to go back to normal, just remove the word "text" leaving only the quotes, save and run # update-grub
+
+To autologin on command line
+
+To auto login user "bob" on first console terminal (tty1) edit file /etc/init/tty1.conf and replace last line:
+
+exec /sbin/getty -8 38400 tty1
+with this:
+
+exec /bin/login -f bob < /dev/tty1 > /dev/tty1 2>&1
+
+
+Automatically login in text mode without specifying userid or password (untested)
+
+Add -a <your-user-name> to the line:
+
+exec /sbin/getty -8 38400 tty1
+in file /etc/init/tty1.conf
+
+like so:
+
+exec /sbin/getty -8 38400 tty6 -a gruber
+/etc/init/tty1.conf is the upstart job that runs at the appropriate time to start the terminal session on tty1. Adding the -a option tells getty to call the login program with the -f option to sign that user in, bypassing the user prompt from getty and the password prompt from login.

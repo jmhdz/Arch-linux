@@ -1,0 +1,35 @@
+--set up github
+
+git config --global user.name "your name"
+git config --global user.email "email@domain.com"
+
+git init
+git status
+
+--add ignore list
+echo "*" > .gitignore
+
+--add the files to update
+git add -f FILENAME
+
+--commit changes
+git commit -m "Initial configuration Commit"
+git commit -a --allow-empty-message -m ''
+
+-- add remote github
+git remote add origin https://github.com/jmhdz/REPONAME
+
+--push changes
+git push -u origin master
+
+
+
+
+
+
+echo "# arch" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git remote add origin https://github.com/jmhdz/arch.git
+git push -u origin master

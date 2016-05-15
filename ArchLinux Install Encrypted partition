@@ -1,0 +1,74 @@
+#partition hard drive  (sda3 is root, sd2 is swap and sda1 is boot)
+# cryptsetup -c aes-xts-plain -y -s 512 luksFormat /dev/sda3
+# cryptsetup luksOpen /dev/sda3 luks
+# pvcreate /dev/mapper/luks
+# vgcreate ACER /dev/mapper/luks
+# lvcreate --extents 100%FREE ACER --name Arch
+# mkfs.ext4 /dev/sda1
+# mkfs.ext4 /dev/mapper/ACER-Arch
+# mount /dev/mapper/ACER-Archer /mnt
+# mkdir /mnt/boot
+# mount /dev/sda1 /mnt/boot
+# mkswap /dev/sda2
+# swapon /dev/sda2
+# lsblk /dev/sda
+# pacstrap -i /mnt base base-devel
+
+# genfstab -U -p /mnt >> /mnt/etc/fstab
+# arch-chroot /mnt /bin/bash
+# nano /etc/locale.gen  uncomment en_US.UTF-8 UTF-8
+# locale-gen
+# echo LANG=en_US.UTF-8 > /etc/locale.conf
+
+Create a new user:
+# useradd -m -g users -G wheel,storage,power -s /bin/bash nixknight
+
+Set passwords of root and the new user:
+# passwd
+# passwd nixknight
+
+Link your local timezone to /etc/localtime:
+# ln -s /usr/share/zoneinfo/America/Chicago /etc/localtime
+
+For 64-bit installations, edit /etc/pacman.conf and uncomment multilib repository:
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+Install packages as follows:
+
+# pacman -Sy bash-completion vim htop grub-bios os-prober mlocate lsof strace wget
+ openssh
+
+
+
+Since we have setup an encrypted LVM we need to enable LVM and encryption module in initial ramdisk environment. We do that by adding LVM to HOOKS variable in /etc/mkinitcpio.conf:
+
+Before adding:
+
+HOOKS="base udev autodetect modconf block filesystems keyboard fsck"
+
+After adding:
+
+HOOKS="base udev autodetect modconf block keymap encrypt lvm2 filesystems keyboard fsck"
+
+and execute:
+# mkinitcpio -p linux
+
+Modify /etc/default/grub and add the following line:
+GRUB_DISABLE_SUBMENU=y
+GRUB_CMDLINE_LINUX="cryptdevice=/dev/sda3:vgroup:allow-discards"
+
+Install GRUB:
+# grub-install /dev/sda
+# cp /usr/share/locale/en\@quot/LC_MESSAGES/grub.mo /boot/grub/locale/en.mo
+# grub-mkconfig -o /boot/grub/grub.cfg
+
+Set system hostname in /etc/hostname.
+
+Exit chroot environment, umount partitions and reboot:
+# exit
+# umount /mnt/boot
+# umount /mnt
+# reboot
+
+http://www.nixknight.com/2014/02/arch-linux-installation-with-kde-desktop/

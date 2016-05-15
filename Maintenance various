@@ -1,0 +1,9 @@
+cp -rf '/var/lib/plexmediaserver/Library/Application Support' /home/chema/Desktop/plexdata
+
+
+
+Update plex
+$ wget (plexmediaserver link)
+$ sudo dpkg -i (plexmediaserver link)
+$ rm plexmediaserver link
+

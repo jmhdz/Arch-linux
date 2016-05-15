@@ -1,0 +1,310 @@
+--Boot and login using the live usb
+
+-- Update time
+    #timedatectl set-ntp true
+
+--find internet device name
+    #iw device
+
+--Set device up
+    #ip link set wlp2s0 (susbstitute for device name)
+
+--Connect to wifi
+    #wifi-menu (device name)
+
+--Confirm there is an internet connection
+    #ping www.google.com
+
+--Check disk
+    #lsblk
+
+--create file system for partition and swap, turn on swap
+    #mkfs.ext4 /dev/sda7
+    #mkswap /dev/sda8
+    #swapon /dev/sda8
+
+-- mount the partition
+    #mount /dev/sda7 /mnt
+
+-- install arch linux
+    #pacstrap -i /mnt base base-devel
+
+-- generate fstab and check it for unusual things
+    #genfstab -U -p /mnt > /mnt/etc/fstab
+    #nano /mnt/ect/fstab
+
+-- chroot into arch
+    #arch-chroot /mnt /bin/bash
+
+--set your locale
+    nano /etc/locale.gen
+    * uncomment en_US.UTF-8
+
+--generate locale filesystem
+    locale-gen
+    echo LANG=en_US.UTF-8 > /etc/locale.conf
+    export LANG=eng_US.UTF-8
+
+--set time zone
+    # tzselect
+    # ln -s /usr/share/zoneinfo/Zone/SubZone /etc/localtime
+    # hwclock --systohc --utc
+
+-- set hostname
+    #echo arch64 > /etc/hostname
+
+--enable dhcdp
+    #systemctl enable dhcpcd
+
+--create initial ram disk
+    #mkinitcpio -p linux
+
+--Install software
+    #pacman -S iw wpa_supplicant dialog wpa_actiond grub os-prober alsa-utils mesa x86-input-synaptics
+
+--If running 64 bit do the folowing
+    #nano /etc/pacman.conf
+    *uncoment [multilib]
+              Include = /etc/pacman.d/mirrorlist
+
+--set a root password
+    #passwd
+
+--create a user, add it to the groups and give it a password
+    #useradd -m -g users -G wheel,storage, power,network -s /bin/bash johndoe
+    #passwd johndoe
+
+--install GRUB
+    #grub-install --recheck /dev/sda
+
+--create a grub conf file and save it to root
+    #grub-mkconfig -o /root/grub.cfg
+    #grub-mkconfig -o /root/grub.cfg.arch
+
+--exit chroot
+    #exit
+    
+--umount
+    #umount -R /mnt
+    #reboot
+
+IN UBUNTU if doing multiboot system
+--login and became root
+
+--run os-prober
+    #os-prober
+
+--if arch isn't detected mount it
+    #mount /dev/sda7 /mnt
+
+--re-run os-prober
+    #os-prober
+
+--backup working gub conf file and make a new one
+    #mv /boot/grub/grub.cfg /root/grub.cf.ubuntu
+    #grub-mkconfig -o /boot/grub/grub.cfg
+    #grub-install --recheck /dev/sda
+    #update-grub
+    #reboot
+
+--Log into arch, if it gives an rootfs error, log back into ubuntu and fix the UUID in grub.cfg
+
+
+grub.cfg in Linux ubuntu (/boot/grub/grub.cfg) shows me this:
+
+menuentry 'Arch' --class gnu-linux --class gnu --class os $menuentry_id_option 'osprober-gnulinux-simple-331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba' {
+        insmod part_msdos
+        insmod ext2
+        set root='hd0,msdos5'
+        if [ x$feature_platform_search_hint = xy ]; then
+          search --no-floppy --fs-uuid --set=root --hint-bios=hd0,msdos5 --hint-efi=hd0,msdos5 --hint-baremetal=ahci0,msdos5  331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+        else
+          search --no-floppy --fs-uuid --set=root 331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+        fi
+        linux /boot/vmlinuz-linux root=UUID=ad4103fa-d940-47ca-8506-301d8071d467 rw quiet
+        initrd /boot/initramfs-linux.img
+}
+submenu 'Advanced options for Arch' $menuentry_id_option 'osprober-gnulinux-advanced-331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba' {
+        menuentry 'Arch Linux, with Linux core repo kernel (on /dev/sda5)' --class gnu-linux --class gnu --class os $menuentry_id_option 'osprober-gnulinux-/boot/vmlinuz-linux--331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba' {
+               insmod part_msdos
+               insmod ext2
+               set root='hd0,msdos5'
+               if [ x$feature_platform_search_hint = xy ]; then
+                 search --no-floppy --fs-uuid --set=root --hint-bios=hd0,msdos5 --hint-efi=hd0,msdos5 --hint-baremetal=ahci0,msdos5  331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+               else
+                 search --no-floppy --fs-uuid --set=root 331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+               fi
+               linux /boot/vmlinuz-linux root=UUID=ad4103fa-d940-47ca-8506-301d8071d467 rw quiet
+               initrd /boot/initramfs-linux.img
+        }
+        menuentry 'Arch Linux, with Linux core repo kernel (Fallback initramfs) (on /dev/sda5)' --class gnu-linux --class gnu --class os $menuentry_id_option 'osprober-gnulinux-/boot/vmlinuz-linux--331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba' {
+               insmod part_msdos
+               insmod ext2
+               set root='hd0,msdos5'
+               if [ x$feature_platform_search_hint = xy ]; then
+                 search --no-floppy --fs-uuid --set=root --hint-bios=hd0,msdos5 --hint-efi=hd0,msdos5 --hint-baremetal=ahci0,msdos5  331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+               else
+                 search --no-floppy --fs-uuid --set=root 331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+               fi
+               linux /boot/vmlinuz-linux root=UUID=ad4103fa-d940-47ca-8506-301d8071d467 rw quiet
+               initrd /boot/initramfs-linux-fallback.img
+        }
+}
+
+--WTH:
+
+            --set=root 331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+--and
+
+            root=UUID=ad4103fa-d940-47ca-8506-301d8071d467
+
+
+doesn’t match
+
+I’ll think about it later but now I need to fix it.
+
+I did create a grub.cfg in Arch Linux. So I need to get a copy of that to determine what Arch think is correct.
+
+--Mount Arch into Linux Mint:
+    #mount /dev/sda7 /mnt
+
+--Copy Grub.cfg into
+    #cp /mount /root/grub.cfg /root/grub.cfg.arch
+
+From this grub.cfg.arch file (I renamed it for convenience) this is what I can see:
+
+menuentry 'Arch Linux, with Linux core repo kernel' --class arch --class gnu-linux --class gnu --class os $menuentry_id_option 'gnulinux-core repo kernel-true-331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba' {
+        load_video
+        set gfxpayload=keep
+        insmod gzio
+        insmod part_msdos
+        insmod ext2
+        set root='hd0,msdos5'
+        if [ x$feature_platform_search_hint = xy ]; then
+          search --no-floppy --fs-uuid --set=root --hint-bios=hd0,msdos5 --hint-efi=hd0,msdos5 --hint-baremetal=ahci0,msdos5  331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+        else
+          search --no-floppy --fs-uuid --set=root 331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+        fi
+        echo    'Loading Linux core repo kernel ...'
+        linux   /boot/vmlinuz-linux root=UUID=331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba rw  quiet
+        echo    'Loading initial ramdisk ...'
+        initrd  /boot/initramfs-linux.img
+}
+menuentry 'Arch Linux, with Linux core repo kernel (Fallback initramfs)' --class arch --class gnu-linux --class gnu --class os $menuentry_id_option 'gnulinux-core repo kernel-fallback-331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba' {
+        load_video
+        set gfxpayload=keep
+        insmod gzio
+        insmod part_msdos
+        insmod ext2
+        set root='hd0,msdos5'
+        if [ x$feature_platform_search_hint = xy ]; then
+          search --no-floppy --fs-uuid --set=root --hint-bios=hd0,msdos5 --hint-efi=hd0,msdos5 --hint-baremetal=ahci0,msdos5  331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+        else
+          search --no-floppy --fs-uuid --set=root 331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+        fi
+        echo    'Loading Linux core repo kernel ...'
+        linux   /boot/vmlinuz-linux root=UUID=331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba rw  quiet
+        echo    'Loading initial ramdisk ...'
+        initrd  /boot/initramfs-linux-fallback.img
+}
+
+
+That means the correct UUID is
+    331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba.
+
+That’s good then.
+
+
+--Open Linux ubuntu grub.cfg in gedit:
+    #gedit /boot/grub/grub.cfg
+
+--Replace UUID
+    ad4103fa-d940-47ca-8506-301d8071d467
+with
+
+331e2ff8-fc8b-4de1-93b9-4ce5aeb7c3ba
+
+
+Save the file. Reboot
+
+--Boot into arch and connect to wifi
+    #wifi-menu -o
+
+--if it doesnt work, check what systems are running
+    #ls -l /etc/systemd/system/multi-user.target.wants
+
+--stop and disable all services shown in the list with
+    #systemctl disable unitname.service
+    #systemctl stop unitname.service
+
+--copy manual configuration file
+    #cp /etc/netctl/examples/wireless-wpa /etc/netctl
+
+--Edit the interface name ESSID and key
+
+--make sure is chmod 600
+
+--test it
+    #netctl start wireless-wpa_wpa
+
+--Instal Xorg and related packages
+    #pacman -S xorh-server xorg-apps xorg-init xorg xorg-devices
+
+--Install enable and configure a display manager
+    #pacman -S sddm sddm-kcm
+    #systmectl enable sddm.service
+    #nano /etc/sddm.conf
+
+--add or append the following conf
+
+[Theme]
+# Current theme name
+Current=breeze
+
+#Cursor theme
+CursorTheme=breeze_cursors
+
+
+--add plasma kde 
+    #pacman -S plasma kdebase sdegraphics-knsnapshot gwenview kf5 kf5-aids ttf-freefont ntp
+    #pacman -R plasma-mediacenter
+    #systemctl enable ntpd
+
+
+--update .xinitrc
+    #echo exec startkde > .xinitrc
+
+--install input devices
+    #pacman -S lm_sensors laptop_detect lsb-release xf86-input-synaptics
+
+--enable autostart in display manager
+    #systemctl start sddm.service
+    #startx
+
+--make network manager start on boot
+    #sudo systemctl enable NetworkManager.service
+
+--disable dhcpcd ( since network manager wants to be the one to handle the dhcpd and related stuff, youll need to disable and stop it)
+    #sudo systemctl disable dhcpcd.service
+    #sudo systemctl disable dhcpcd@.service
+    #sudo systemctl stop dhcpcd.service
+    #sudo systemctl stop dhcpcd@.service
+
+--enable wpa-wpa_supplicant if you want to use wifi
+    #sudo systemctl enable wpa_supplicant.service
+
+--turn off interface controles in my case eth0 and wlan0
+    #ip link set down wlan0
+    #ip link set down eth0
+
+--start wpa_supplicant
+    #systemctl start wpa_supplicant.service
+
+--Start NetworkManager
+    #sudo systemctl start NetworkManager.service
+
+*If you get an error about unreachable D-bus ignore it 
+*If the network manager is not running and network-manager-applet doesnt show up in your upper gnome 3 panel try this:
+
+    #sudo NetworkManager
+    #nm-applet
