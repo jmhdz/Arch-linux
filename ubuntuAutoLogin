@@ -31,3 +31,17 @@ like so:
 
 exec /sbin/getty -8 38400 tty6 -a gruber
 /etc/init/tty1.conf is the upstart job that runs at the appropriate time to start the terminal session on tty1. Adding the -a option tells getty to call the login program with the -f option to sign that user in, bypassing the user prompt from getty and the password prompt from login.
+
+
+--tiger vnc conf file
+~/.vnv/xstartup
+#!/bin/sh
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+startxfce4 &
+ 
+[ -x /etc/vnc/xstartup ] && exec /etc/vnc/xstartup
+[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+xsetroot -solid grey
+vncconfig -iconic &
+-----------------------------------------------------
