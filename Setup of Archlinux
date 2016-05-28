@@ -188,3 +188,28 @@ eval $(keychain --eval --quiet id_ed25519 id_rsa ~/.keys/my_custom_key)
 
 
 rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/bigfile.txt username@198.211.117.129:~/Desktop
+
+FreeBSD dual boot archlinux
+
+    --Once freeBSD is installed on the partition run the following
+$sudo nano /etc/grub.d/40_custom
+
+-- put the following in the file
+    
+#!/bin/sh
+exec tail -n +3 $0
+# This file provides an easy way to add custom menu entries.  Simply type the
+# menu entries you want to add after this comment.  Be careful not to change
+# the 'exec tail' line above.
+
+menuentry "FreeBSD" {
+   set root=(hd0,2)
+   chainloader +1
+}
+
+-- on the line "set root=(hd0,2) hd0 is the harddrive number starting from 0 and 2 is the partition starting from 1. ie hd0,2 = /dev/sda1
+change it accordingly to the right drive and partition
+
+--once is saved run
+
+$sudo grub-mkconfig -o /boot/grub/grub.cfg
